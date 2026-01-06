@@ -1,0 +1,318 @@
+Terraform Most IMP Interview Q/A’s
+=============================================================
+1) What is a state file in Terraform?
+Ans: A state file is a file that Terraform uses to keep track of the current state of
+the infrastructure. It maps the resources defined in the configuration to the
+real-world resources.
+Example: terraform show
+Managing the state file is crucial because it ensures consistency between the
+infrastructure's real state and the configuration. It also enables features like
+change detection and planning. Example: terraform init
+2) How can you secure the state file in Terraform?
+Ans : State files can be secured by storing them in remote backends with proper
+access controls and encryption, such as AWS S3 with server-side encryption and
+access control policies.
+Example:
+terraform { backend "s3" {
+bucket = "my-terraform-state"
+key = "Infra/terraform.tfstate"
+region = "us-west-2" encrypt = true } }
+3) How do you manage different environments (e.g., dev, uat ,sit,
+Pre-prod,prod) in Terraform?
+Ans:
+Different environments can be managed using workspaces or separate
+directories with different variable files and state files.
+Example:
+terraform workspace new dev
+terraform workspace new prod
+4) How do you import existing resources into Terraform?
+Ans : Existing resources can be imported using the terraform import command,
+which maps the existing resource to a Terraform resource in the state file.
+Example:
+terraform import aws_instance.example i-1234567890abcdef0
+5) How do you handle secrets in Terraform?
+Ans :
+Secrets can be managed using environment variables, secure secret
+management services (e.g., AWS Secrets Manager), or Terraform's sensitive
+attribute.
+Example:
+resource "aws_secretsmanager_secret" "example" {
+name = "example"
+description = "An example secret" }
+resource "aws_secretsmanager_secret_version" "example" {
+secret_id = aws_secretsmanager_secret.example.id
+secret_string = jsonencode({
+username = "example_user"
+password = "example_password"
+})
+}
+6) What is a Tf backend in Terraform?
+Ans : A backend in Terraform defines where and how state is loaded and stored.
+It can be local or remote (e.g., S3).
+7) What is the difference between count and for_each in Terraform?
+Ans :
+“count is used to create multiple instances of a resource, while for_each is used
+to iterate over a map or set of values to create multiple instances.”
+Example (count):
+resource "aws_instance" "example" {
+count = 3
+ami = "ami-0c55b159cbfafe1f0"
+instance_type = "t2.micro"
+}
+Example (for_each):
+resource "aws_instance" "example" {
+for_each = toset(["instance1", "instance2"])
+Ami = "ami-0c55b159cbfafe1f0"
+instance_type = "t2.micro"
+tags = {
+Name = each.key
+}
+}
+8)What are the locals in Terraform and how do you use them?
+Ans :
+“Locals in Terraform are used to define local values that can be reused within a
+module. They help avoid repetition and make configurations more readable.”
+Example:
+locals {
+instance_type = "t2.micro"
+ami_id = "ami-0c55b159cbfafe1f0"
+}
+resource "aws_instance" "example" {
+Ami = local.ami_id
+instance_type = local.instance_type
+}
+9)What is the purpose of the terraform taint command?
+Ans :
+“terraform taint marks a resource for recreation on the next terraform apply. It is
+useful when a resource needs to be replaced due to a manual change or
+corruption.”
+Example: terraform taint aws_instance.example
+10) What is a null resource in terraform ?
+Ans :
+A null_resource in Terraform is a special resource that doesn’t manage
+any real infrastructure but allows you to run provisioners or scripts during
+the apply phase.
+None
+🧩 What Is null_resource?
+The null_resource is part of the HashiCorp null provider and is used when
+you want to execute actions (like scripts or commands) that aren’t directly tied to
+a specific infrastructure resource.
+It supports the standard resource lifecycle (create, update, destroy) but doesn’t
+create any actual cloud resource. Instead, it’s often used with provisioners like
+local-exec or remote-exec.
+⚙️ Key Use Cases
+● Running scripts after provisioning (e.g., bootstrap tasks)
+● Triggering actions based on changes in input variables
+● Orchestrating workflows that depend on resource outputs
+● Workarounds when no native Terraform resource exists
+🧪 Example: Run a Local Script After EC2 Creation
+resource "aws_instance" "web" {
+ami = "ami-0c55b159cbfafe1f0"
+instance_type = "t2.micro"
+}
+resource "null_resource" "post_provision" {
+provisioner "local-exec" {
+command = "echo EC2 instance ${aws_instance.web.id}
+created!"
+}
+None
+triggers = {
+instance_id = aws_instance.web.id
+}
+}
+● The triggers block ensures the null_resource is recreated if the EC2
+instance changes.
+● The local-exec provisioner runs a shell command after the EC2
+instance is created.
+🔄 triggers Explained
+The triggers argument is a map of arbitrary values. When any value changes,
+the null_resource is replaced. This is how you control when the provisioner
+re-runs.
+triggers = {
+timestamp = timestamp()
+}
+This forces the resource to run every time you apply.
+What is a data Block in terraform ?How to pass existing data in terraform ?
+Ans :
+“In Terraform, a data block is used to fetch and reference existing infrastructure
+or external information without creating new resources. You pass existing data
+using provider-specific data sources.”
+None
+📘 What Is a data Block in Terraform?
+A data block allows you to query existing resources or external metadata so
+you can use them in your Terraform configuration. It’s read-only and doesn’t
+modify infrastructure.
+Use cases include:
+● Referencing an existing AMI, VPC, subnet, or security group
+● Fetching secrets from AWS Secrets Manager or Azure Key Vault
+● Reading files, templates, or external APIs
+🧩 Syntax Example: Fetch Existing AWS AMI
+data "aws_ami" "ubuntu" {
+most_recent = true
+owners = ["099720109477"] # Canonical
+filter {
+name = "name"
+values =
+["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server
+-*"]
+}
+}
+None
+resource "aws_instance" "web" {
+ami = data.aws_ami.ubuntu.id
+instance_type = "t2.micro"
+}
+● The data.aws_ami.ubuntu.id references the existing AMI.
+● No new AMI is created—Terraform just reads its metadata.
+🔐 Example: Fetch Secret from AWS Secrets Manager
+data "aws_secretsmanager_secret_version" "db_password"
+{
+secret_id = "prod/db_password"
+}
+output "db_password" {
+value =
+data.aws_secretsmanager_secret_version.db_password.secr
+et_string
+}
+None
+📦 Example: Read External File
+data "template_file" "init_script" {
+template = file("${path.module}/init.sh")
+}
+resource "aws_instance" "web" {
+user_data = data.template_file.init_script.rendered
+}
+What will happen in the background if we pass terraform init ?
+Ans :
+When you run terraform init, Terraform initializes your working directory by
+downloading provider plugins, setting up the backend, and preparing modules.
+It’s the first step before any plan or apply.
+What Happens Behind the Scenes with terraform init
+Here’s a breakdown of the key background operations:
+1. 📦 Plugin Installation
+● Downloads required provider plugins (e.g., AWS, Azure, GCP) from the
+Terraform Registry or other sources.
+● Stores them in the .terraform/plugins directory.
+● Ensures compatibility with your Terraform version.
+Shell
+2. ️ Backend Initialization
+● Configures the state backend (e.g., local, S3, Azure Blob, GCS).
+● If using remote backends, it may prompt for credentials or lock the state.
+● Validates backend settings and prepares for state storage.
+3. 🔁 Module Initialization
+● Downloads any external modules referenced in your configuration.
+● Stores them in .terraform/modules.
+● Ensures version constraints are respected.
+4. 🧪 Validation and Setup
+● Checks for syntax errors in your .tf files.
+● Prepares the directory for future commands like terraform plan and
+terraform apply.
+5. 🧹 Cleanup and Reinitialization
+● If re-run, it cleans up and reinitializes plugins/modules safely.
+● Useful when switching providers, updating modules, or changing backend
+configs.
+🧩 Example Output
+Initializing the backend...
+Initializing provider plugins...
+- Finding hashicorp/aws versions matching ">= 3.0.0"...
+- Installing hashicorp/aws v5.0.0...
+Terraform has been successfully initialized!
+✅ Best Practices
+● Run terraform init after cloning a repo or modifying backend/module
+settings.
+● Safe to run multiple times—it won’t overwrite your state.
+● Use terraform init -upgrade to refresh plugins and modules.
+What will happen in the background if we apply the terraform plan command ?
+Ans :
+“When you run a terraform plan, Terraform creates an execution plan by
+comparing your configuration files to the current state of your infrastructure. It
+shows what will change, without making any actual changes”.
+🔍 What Happens Behind the Scenes with terraform plan
+Here’s a detailed breakdown of the background operations:
+1. 📥 Load Configuration
+● Terraform reads all .tf files in your working directory.
+● It parses variables, providers, modules, and resource definitions.
+2. 📦 Initialize Providers
+● Loads provider plugins (e.g., AWS, Azure, GCP) from .terraform directory.
+● Validates provider versions and credentials.
+3. 📊 Read Current State
+● Loads the current state from the backend (local or remote like S3, GCS, etc.).
+● If remote, it may lock the state file to prevent concurrent changes.
+4. 🔍 Query Real Infrastructure
+● Contacts cloud providers to fetch the actual state of resources.
+● Ensures Terraform’s state file is in sync with reality (detects drift).
+5. 🔁 Compare Desired vs Actual State
+● Compares your configuration (.tf files) with the current state.
+● Identifies additions (+), changes (~), and deletions (-).
+Shell
+6. 📋 Generate Execution Plan
+● Outputs a detailed plan showing what will happen if you run terraform apply.
+● No changes are made—this is a dry run.
+Example Output:
+~ aws_instance.web
+ instance_type: "t2.micro" => "t3.micro"
+Why terraform plan Is Critical
+● Prevents surprises: You see what will change before it happens.
+● Detects drift: Highlights manual changes made outside Terraform.
+● Validates logic: Ensures your configuration is syntactically and semantically
+correct.
+● Supports CI/CD: Often used in pipelines to gate deployments.
+🚀 Pro Tips
+● Use terraform plan -out=tfplan to save the plan for later use with
+terraform apply tfplan.
+● Use terraform plan -var-file="prod.tfvars" for environment-specific
+planning.
+● Combine with terraform validate for full pre-deployment checks.
+🔐 What Is the Terraform Lockfile?
+Ans :
+The Terraform lockfile (.terraform.lock.hcl) is a dependency tracking file that
+ensures consistent provider versions across environments. It prevents
+unexpected upgrades or mismatches.
+🔐 What Is the Terraform Lockfile?
+None
+● Filename: .terraform.lock.hcl
+● Purpose: Records exact versions and checksums of provider plugins used in
+your configuration.
+● Scope: Ensures reproducibility across teams, CI/CD pipelines, and
+environments.
+Why It Matters:
+● Prevents breaking changes from provider updates
+● Ensures consistent behavior across machines
+● Supports secure checksum validation of downloaded plugins
+📦 Example Lockfile Snippet
+provider "registry.terraform.io/hashicorp/aws" {
+ version = "5.0.0"
+ constraints = ">= 3.0.0"
+ hashes = [
+ "h1:abc123...",
+ "zh:xyz456..."
+ ]
+}
+🔓 How to Unlock or Update the Lockfile
+You don’t “unlock” it like a state lock—you regenerate or update it:
+✅ To Refresh Provider Versions:
+Shell
+Shell
+terraform init -upgrade
+● Re-downloads latest allowed versions based on constraints
+● Updates .terraform.lock.hcl with new checksums
+🧹 To Delete and Recreate:
+rm .terraform.lock.hcl
+terraform init
+● Removes the lockfile and reinitializes it from scratch
+🔍 To Manually Edit:
+● You can edit the file, but it’s not recommended—use terraform init
+-upgrade instead.
+Best Practices
+● Commit the lockfile to version control (especially in teams)
+● Use version constraints in required_providers to control upgrades
+● Regenerate lockfile only when you intend to upgrade providers
+Write Sample terraform code to create an ec2 instance ?
+Write a Sample terraform code to create VPC & Subnet creation ?
+Write a Sample terraform code to create an S3 bucket that enables s3 versioning?
+What are Terraform basic commands ?
+Terraform init
+Terraform validate
+Terraform plan
+Terraform apply
+Terraform destroy
