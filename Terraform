@@ -1,0 +1,11 @@
+1.What is the difference between for_each and for in Terraform?
+2.What are modules in terraform and why should we use them?
+3.what is the role of statefile in terraform?
+4.Have you considered storing statefile in Git instead of AWS S3 or Azure Blob?
+5.Explain terraform statefile management?
+6.Two DevOps Engineers attempts to update statefile at once, what happens?
+7.We don’t have a cloud account. Where can we stop the statefile?
+8.Do you use Terraform Enterprise or Community version?
+9.Have you heard about opentofu? Do you think it is better than terraform?
+10.Write terraform code to create any resource on AWS?
+11.What is the difference between Resource and Datasource in terraform?
