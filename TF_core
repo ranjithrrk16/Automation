@@ -1,0 +1,4 @@
+Introduction to Istio Ingress
+Istio, an open-source service mesh widely embraced for overseeing and safeguarding communication within services and at the edge, relies on the Envoy proxy for its data plane. 
+This proxy is adept at managing service-to-service communication, supporting both L3/L4 and L7 layers. Notably, the same proxy is employed for Istio Ingress.
+When it comes to handling and securing traffic in cloud-native applications, Istio Ingress (or Istio Ingress Gateway) and Istio Gateway can seamlessly function at both L4 and L7 layers.
