@@ -2,3 +2,20 @@ Introduction to Istio Ingress
 Istio, an open-source service mesh widely embraced for overseeing and safeguarding communication within services and at the edge, relies on the Envoy proxy for its data plane. 
 This proxy is adept at managing service-to-service communication, supporting both L3/L4 and L7 layers. Notably, the same proxy is employed for Istio Ingress.
 When it comes to handling and securing traffic in cloud-native applications, Istio Ingress (or Istio Ingress Gateway) and Istio Gateway can seamlessly function at both L4 and L7 layers.
+Istio ingress gateway offers advanced traffic management and routing capabilities, including:
+Rate limiting
+Circuit breaking
+Failover, and more.
+
+Leveraging Envoy within Istio ingress enables manipulation of HTTP headers for both requests and responses.
+It comes equipped with robust out-of-the-box security features such as mutual TLS (mTLS) and access controls.
+Extensible policy controls empower users with comprehensive network and security management.
+The Istio Ingress Gateway ensures extensive telemetry and observability options.
+Multiple load-balancing techniques and protocols are supported.
+
+Resources of Istio Ingress Gateway
+The Istio Ingress Gateway provides specific resources for implementing various network and security functionalities:
+
+Istio Gateway: This resource serves as the entry point for traffic originating from external sources. It proves useful for implementing TLS authentication certificates.
+Virtual Service: Configured within the Istio Ingress Gateway, the Virtual Service resource directs the traffic received by the gateway to backend services.
+Destination Rule: By defining variations in deployments within Kubernetes, the Destination Rule facilitates advanced deployment strategies such as canary releases or blue/green deployments.
